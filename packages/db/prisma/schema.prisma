@@ -1,0 +1,235 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator erd {
+  provider = "prisma-erd-generator"
+  output   = "./erd.svg"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum CalendarMemberRole {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+enum AppointmentMode {
+  IN_PERSON
+  VIDEO_CALL
+  PHONE_CALL
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum AppointmentLawyerRole {
+  ORGANIZER
+  ATTENDEE
+}
+
+model Country {
+  id               String   @id @default(cuid())
+  isoCode          String   @unique
+  name             String
+  defaultTimeZone  TimeZone @relation("CountryDefaultTimeZone", fields: [defaultTimeZoneId], references: [id])
+  defaultTimeZoneId String
+
+  offices          Office[]
+  timeZones        CountryTimeZone[]
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model TimeZone {
+  id        String @id @default(cuid())
+  ianaName  String @unique
+
+  countries CountryTimeZone[]
+  defaultForCountries Country[] @relation("CountryDefaultTimeZone")
+
+  offices   Office[]
+  lawyers   Lawyer[]
+  calendars Calendar[]
+
+  scheduledAppointments Appointment[] @relation("AppointmentScheduledTimeZone")
+
+  createdAt DateTime @default(now())
+}
+
+model CountryTimeZone {
+  country   Country @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  countryId String
+
+  timeZone   TimeZone @relation(fields: [timeZoneId], references: [id], onDelete: Restrict)
+  timeZoneId String
+
+  @@id([countryId, timeZoneId])
+}
+
+model Office {
+  id         String  @id @default(cuid())
+  name       String
+
+  country    Country @relation(fields: [countryId], references: [id], onDelete: Restrict)
+  countryId  String
+
+  timeZone   TimeZone @relation(fields: [timeZoneId], references: [id], onDelete: Restrict)
+  timeZoneId String
+
+  lawyers    Lawyer[]
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([countryId])
+  @@index([timeZoneId])
+}
+
+model Lawyer {
+  id        String @id @default(cuid())
+  email     String @unique
+  fullName  String
+  phone     String?
+  isActive  Boolean @default(true)
+
+  office    Office  @relation(fields: [officeId], references: [id], onDelete: Restrict)
+  officeId  String
+
+  /// Optional override; otherwise use office.timeZone
+  timeZone  TimeZone? @relation(fields: [timeZoneId], references: [id], onDelete: Restrict)
+  timeZoneId String?
+
+  ownedCalendars Calendar[] @relation("CalendarOwner")
+  calendarMemberships CalendarMember[]
+
+  createdAppointments Appointment[] @relation("AppointmentCreatedBy")
+  appointmentLinks    AppointmentLawyer[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([officeId])
+  @@index([timeZoneId])
+}
+
+model Calendar {
+  id        String @id @default(cuid())
+  name      String
+
+  owner     Lawyer @relation("CalendarOwner", fields: [ownerLawyerId], references: [id], onDelete: Restrict)
+  ownerLawyerId String
+
+  /// Display preference for this calendar (optional)
+  timeZone   TimeZone? @relation(fields: [timeZoneId], references: [id], onDelete: Restrict)
+  timeZoneId String?
+
+  members   CalendarMember[]
+  appointments Appointment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerLawyerId])
+  @@index([timeZoneId])
+}
+
+model CalendarMember {
+  calendar Calendar @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+  calendarId String
+
+  lawyer   Lawyer @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  lawyerId String
+
+  role     CalendarMemberRole @default(VIEWER)
+
+  createdAt DateTime @default(now())
+
+  @@id([calendarId, lawyerId])
+  @@index([lawyerId])
+}
+
+model Client {
+  id       String @id @default(cuid())
+  fullName String
+  email    String?
+  phone    String?
+
+  appointments Appointment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Appointment {
+  id          String @id @default(cuid())
+  calendar    Calendar @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+  calendarId  String
+
+  client      Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  clientId    String?
+
+  mode        AppointmentMode
+  status      AppointmentStatus @default(SCHEDULED)
+  subject     String
+  description String?
+
+  /// Source of truth: instants in UTC
+  startsAtUtc DateTime
+  endsAtUtc   DateTime
+
+  /// For correct local rendering/audit (DST-safe):
+  /// - scheduledTimeZone: IANA zone used when user picked the time
+  /// - scheduledOffsetMinutes: offset applied at that instant (e.g. -180)
+  scheduledTimeZone TimeZone @relation("AppointmentScheduledTimeZone", fields: [scheduledTimeZoneId], references: [id], onDelete: Restrict)
+  scheduledTimeZoneId String
+  scheduledOffsetMinutes Int
+
+  /// Optional: wall-clock timestamps as entered (avoid if you don't need audit)
+  startsAtLocal DateTime?
+  endsAtLocal   DateTime?
+
+  locationAddress String?
+  videoUrl        String?
+  phoneNumber     String?
+
+  createdBy Lawyer @relation("AppointmentCreatedBy", fields: [createdByLawyerId], references: [id], onDelete: Restrict)
+  createdByLawyerId String
+
+  lawyers   AppointmentLawyer[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  cancelledAt DateTime?
+
+  @@index([calendarId, startsAtUtc])
+  @@index([startsAtUtc])
+  @@index([createdByLawyerId])
+  @@index([clientId])
+  @@index([scheduledTimeZoneId])
+}
+
+model AppointmentLawyer {
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  appointmentId String
+
+  lawyer Lawyer @relation(fields: [lawyerId], references: [id], onDelete: Restrict)
+  lawyerId String
+
+  role   AppointmentLawyerRole @default(ATTENDEE)
+
+  createdAt DateTime @default(now())
+
+  @@id([appointmentId, lawyerId])
+  @@index([lawyerId])
+}
+
