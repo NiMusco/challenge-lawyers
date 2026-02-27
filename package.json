@@ -1,0 +1,19 @@
+{
+  "name": "challenge-lawyers",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,green \"yarn dev:api\" \"yarn dev:web\"",
+    "dev:api": "yarn workspace @challenge/api dev",
+    "dev:web": "yarn workspace @challenge/web dev",
+    "build": "yarn workspaces run build",
+    "typecheck": "yarn workspaces run typecheck",
+    "lint": "yarn workspaces run lint"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
