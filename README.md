@@ -60,6 +60,7 @@ You don’t need to configure environment variables to run the demo.
   - TypeScript everywhere (API + web + shared types).
   - Prisma ORM with a normalized schema for lawyers, calendars, and appointments.
   - Tailwind‑based UI with small, composable components.
+  - Lucide icons.
 
 ---
 
@@ -97,8 +98,7 @@ The web client (under `apps/web`) provides:
   - Mode selection and duration.
   - Inline validation and friendly error messages.
 - An appointment details modal with:
-  - Local date/time.
-  - Duration with a clock icon (Lucide).
+  - Local date/time and duration.
 
 ---
 
