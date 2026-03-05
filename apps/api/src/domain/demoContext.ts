@@ -1,18 +1,15 @@
 import type { PrismaClient } from '@prisma/client';
 
-export type DemoContext = {
+/** Result of getOrCreateDemoBase / getOrCreateLawyerWithCalendar / createLawyerWithCalendar (flat shape). */
+export type LawyerWithCalendar = {
   tzUtc: { id: string; ianaName: string };
   country: { id: string; isoCode: string; name: string };
   office: { id: string; name: string };
-};
-
-export type LawyerWithCalendar = {
-  base: DemoContext;
   lawyer: { id: string; email: string; fullName: string };
   calendar: { id: string; name: string };
 };
 
-export async function getOrCreateDemoBase(prisma: PrismaClient): Promise<DemoContext> {
+async function getOrCreateDemoBase(prisma: PrismaClient): Promise<Pick<LawyerWithCalendar, 'tzUtc' | 'country' | 'office'>> {
   const tzUtc = await prisma.timeZone.upsert({
     where: { ianaName: 'UTC' },
     update: {},
@@ -38,41 +35,41 @@ export async function getOrCreateLawyerWithCalendar(
   prisma: PrismaClient,
   input: { email: string; fullName: string }
 ): Promise<LawyerWithCalendar> {
-  const base = await getOrCreateDemoBase(prisma);
+  const { tzUtc, country, office } = await getOrCreateDemoBase(prisma);
 
   const lawyer = await prisma.lawyer.upsert({
     where: { email: input.email },
-    update: { fullName: input.fullName, officeId: base.office.id },
-    create: { email: input.email, fullName: input.fullName, officeId: base.office.id }
+    update: { fullName: input.fullName, officeId: office.id },
+    create: { email: input.email, fullName: input.fullName, officeId: office.id }
   });
 
   const calendarName = `${lawyer.fullName} (personal)`;
   const calendar =
     (await prisma.calendar.findFirst({ where: { ownerLawyerId: lawyer.id, name: calendarName } })) ??
     (await prisma.calendar.create({
-      data: { ownerLawyerId: lawyer.id, name: calendarName, timeZoneId: base.tzUtc.id }
+      data: { ownerLawyerId: lawyer.id, name: calendarName, timeZoneId: tzUtc.id }
     }));
 
-  return { base, lawyer, calendar };
+  return { tzUtc, country, office, lawyer, calendar };
 }
 
 export async function createLawyerWithCalendar(
   prisma: PrismaClient,
   input: { email: string; fullName: string }
 ): Promise<LawyerWithCalendar> {
-  const base = await getOrCreateDemoBase(prisma);
+  const { tzUtc, country, office } = await getOrCreateDemoBase(prisma);
 
   return await prisma.$transaction(async (tx) => {
     const lawyer = await tx.lawyer.create({
-      data: { email: input.email, fullName: input.fullName, officeId: base.office.id }
+      data: { email: input.email, fullName: input.fullName, officeId: office.id }
     });
 
     const calendarName = `${lawyer.fullName} (personal)`;
     const calendar = await tx.calendar.create({
-      data: { ownerLawyerId: lawyer.id, name: calendarName, timeZoneId: base.tzUtc.id }
+      data: { ownerLawyerId: lawyer.id, name: calendarName, timeZoneId: tzUtc.id }
     });
 
-    return { base, lawyer, calendar };
+    return { tzUtc, country, office, lawyer, calendar };
   });
 }
 

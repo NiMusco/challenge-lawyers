@@ -11,7 +11,9 @@
     "dev:web": "yarn workspace @challenge/web dev",
     "build": "yarn workspaces run build",
     "typecheck": "yarn workspaces run typecheck",
-    "lint": "yarn workspaces run lint"
+    "lint": "yarn workspaces run lint",
+    "test": "yarn workspace @challenge/api test",
+    "test:coverage": "yarn workspace @challenge/api test:coverage"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"

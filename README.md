@@ -49,34 +49,45 @@ You don’t need to configure environment variables to run the demo.
   - `apps/api`: Fastify API (Prisma + DB + business rules).
   - `apps/web`: React + Vite SPA for the lawyers UI.
   - `packages/db`: Prisma schema & database utilities.
-  - `packages/docs`: architecture notes and diagrams.
 
 - **Robust error handling**
   - Centralized `ApiError` wrapper in the web app.
-  - Friendly, localized error messages for common API failures.
   - Clear feedback when time slots are invalid or overlapping.
 
 - **Modern stack**
   - TypeScript everywhere (API + web + shared types).
-  - Prisma ORM with a normalized schema for lawyers, calendars, and appointments.
-  - Tailwind‑based UI with small, composable components.
+  - Prisma ORM with a normalized schema.
+  - Tailwind‑based UI with small components.
 
 ---
 
 ## 🗄️ Database & Prisma
 
-The default local setup uses SQLite at `./.data/dev.db`.  
-The API can also be pointed to PostgreSQL via `DATABASE_URL` if desired.
-
-To (re)generate the Prisma client:
+The default local setup uses SQLite at `./.data/dev.db`.
 
 ```bash
 yarn workspace @challenge/db db:generate
 ```
 
-This will also generate an **ERD diagram**:
+This also generates an **ERD diagram**:
 
 ![Database schema ERD](packages/db/prisma/erd.svg)
+
+---
+
+## ✅ Tests
+
+```bash
+yarn test
+```
+
+To run the tests with coverage:
+
+```bash
+yarn test:coverage
+```
+
+This will generate a coverage report under `apps/api/coverage` (statements/lines ≥ 90%).
 
 ---
 
@@ -89,22 +100,11 @@ Main API routes used by the web app:
 - `GET /api/appointments` – lists appointments for a given lawyer
 - `POST /api/appointments` – creates a new appointment (UTC‑backed, time‑zone–aware)
 
-The web client (under `apps/web`) provides:
-
-- A full‑screen appointment calendar.
-- A “create appointment” modal with:
-  - Automatic time‑zone detection (read‑only for the user).
-  - Mode selection and duration.
-  - Inline validation and friendly error messages.
-- An appointment details modal with:
-  - Local date/time.
-  - Duration with a clock icon (Lucide).
-
 ---
 
-## 🚀 Docker Compose demo
+## 🚀 Docker Compose
 
-If you have Docker installed, you can run a more “deploy‑like” setup with:
+If you have Docker installed (optional):
 
 ```bash
 docker compose up --build

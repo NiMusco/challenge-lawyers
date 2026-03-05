@@ -8,9 +8,9 @@ export function registerLawyers(app: FastifyInstance, prisma: PrismaClient): voi
     return {
       ok: true,
       ids: {
-        timeZoneId: result.base.tzUtc.id,
-        countryId: result.base.country.id,
-        officeId: result.base.office.id,
+        timeZoneId: result.tzUtc.id,
+        countryId: result.country.id,
+        officeId: result.office.id,
         lawyerId: result.lawyer.id,
         calendarId: result.calendar.id
       }
