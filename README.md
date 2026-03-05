@@ -6,6 +6,7 @@
 ![Fastify](https://img.shields.io/badge/fastify-%23000000.svg?style=for-the-badge&logo=fastify&logoColor=white)
 ![Prisma](https://img.shields.io/badge/prisma-%232D3748.svg?style=for-the-badge&logo=prisma&logoColor=white)
 ![SQLite](https://img.shields.io/badge/sqlite-%2307405e.svg?style=for-the-badge&logo=sqlite&logoColor=white)
+![Jest](https://img.shields.io/badge/jest-%23C21325.svg?style=for-the-badge&logo=jest&logoColor=white)
 
 This project is a small but thought-through **lawyers appointment system**.
 
@@ -24,26 +25,13 @@ This project uses a monorepo structure with Yarn workspaces.
 By default:
 
 - **API** will be available at `http://127.0.0.1:3000`
-- **Web** will be available at `http://127.0.0.1:5173`  
-  (if the port is taken, Vite will pick another one)
+- **Web** will be available at `http://127.0.0.1:5173`
 
-The local database is created automatically as **SQLite** at `./.data/dev.db`.  
-You don’t need to configure environment variables to run the demo.
+The local database is created automatically as **SQLite** at `./.data/dev.db`.
 
 ---
 
 ## 🧐 Features
-
-- **Time‑zone–aware scheduling**
-  - Appointments are stored in **UTC** in the database.
-  - The browser’s IANA time zone is detected automatically (fallback to `UTC`).
-  - All times are shown in the **user’s local time**.
-
-- **Smart calendar UX**
-  - Full‑screen weekly calendar using FullCalendar.
-  - Clickable time slots with hover feedback (only on free slots).
-  - Existing appointments are clickable and open a detail dialog.
-  - Overlap detection prevents creating appointments in an occupied slot.
 
 - **Clean separation of concerns**
   - `apps/api`: Fastify API (Prisma + DB + business rules).
@@ -54,9 +42,14 @@ You don’t need to configure environment variables to run the demo.
   - Centralized `ApiError` wrapper in the web app.
   - Clear feedback when time slots are invalid or overlapping.
 
+- **Time‑zone–aware scheduling**
+  - Appointments are stored in **UTC** in the database.
+  - All times are shown in the **user’s local time**.
+
 - **Modern stack**
   - TypeScript everywhere (API + web + shared types).
   - Prisma ORM with a normalized schema.
+  - Smart Calendar UX with clickable slots.
   - Tailwind‑based UI with small components.
 
 ---

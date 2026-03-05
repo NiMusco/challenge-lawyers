@@ -75,6 +75,17 @@ export function registerAppointments(app: FastifyInstance, prisma: PrismaClient)
         ? await getOrCreateDemoLawyer(prisma)
         : await getOrCreateLawyerWithCalendar(prisma, { email: lawyerEmail, fullName: 'New Lawyer' });
 
+    const overlapping = await prisma.appointment.findFirst({
+      where: {
+        calendarId: lawyerContext.calendar.id,
+        startsAtUtc: { lt: endsAtUtc },
+        endsAtUtc: { gt: startsAtUtc }
+      }
+    });
+    if (overlapping) {
+      return reply.code(409).send({ ok: false, error: 'This time slot overlaps an existing appointment' });
+    }
+
     const timeZone = await prisma.timeZone.upsert({
       where: { ianaName: scheduledTimeZone },
       update: {},

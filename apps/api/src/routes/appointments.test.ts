@@ -28,6 +28,7 @@ function createMockPrisma() {
     calendar: { findFirst: jest.fn().mockResolvedValue(null), create: jest.fn().mockResolvedValue(demoResult.calendar) },
     appointment: {
       findMany: jest.fn().mockResolvedValue(appointments),
+      findFirst: jest.fn().mockResolvedValue(null),
       create: jest.fn().mockResolvedValue({
         id: 'apt2',
         subject: 'New',
@@ -178,6 +179,28 @@ describe('registerAppointments', () => {
     const body = JSON.parse(res.payload);
     expect(body.ok).toBe(true);
     expect(body.appointment).toBeDefined();
+  });
+
+  it('POST /api/appointments returns 409 when slot overlaps existing appointment', async () => {
+    const mock = createMockPrisma();
+    (mock as any).appointment.findFirst.mockResolvedValueOnce({ id: 'existing-apt' });
+    const app = Fastify();
+    registerAppointments(app, mock as unknown as PrismaClient);
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/appointments',
+      payload: {
+        subject: 'Overlap',
+        startsAtLocal: '2025-12-01T10:00',
+        durationMinutes: 30,
+        scheduledTimeZone: 'UTC',
+        lawyerEmail: 'demo.lawyer@challenge.local'
+      }
+    });
+    expect(res.statusCode).toBe(409);
+    const body = JSON.parse(res.payload);
+    expect(body.ok).toBe(false);
+    expect(body.error).toContain('overlaps');
   });
 
   it('POST /api/appointments returns 200 and appointment on success', async () => {
